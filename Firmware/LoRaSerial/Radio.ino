@@ -1,3 +1,7 @@
+//=========================================================================================
+// Radio.ino
+//=========================================================================================
+
 //Apply settings to radio
 //Called after begin() and once user exits from command interface
 bool configureRadio()
@@ -91,6 +95,8 @@ bool configureRadio()
   outputSerialData(true);
   return success;
 }
+
+//=========================================================================================
 
 //Update the settings based upon the airSpeed value
 void convertAirSpeedToSettings(Settings *newSettings, uint16_t airSpeed)
@@ -198,6 +204,8 @@ void convertAirSpeedToSettings(Settings *newSettings, uint16_t airSpeed)
   }
 }
 
+//=========================================================================================
+
 //Set radio frequency
 bool setRadioFrequency(bool rxAdjust)
 {
@@ -244,6 +252,8 @@ bool setRadioFrequency(bool rxAdjust)
   return true;
 }
 
+//=========================================================================================
+
 //Place the radio in receive mode
 void returnToReceiving()
 {
@@ -284,6 +294,8 @@ void returnToReceiving()
   }
 }
 
+//=========================================================================================
+
 //Given spread factor, bandwidth, coding rate and number of bytes, return total Air Time in ms for packet
 //See datasheet for the nPayload formula / section 4.1.1.6
 float calcAirTimeUsec(uint8_t bytesToSend)
@@ -316,11 +328,15 @@ float calcAirTimeUsec(uint8_t bytesToSend)
   return tPacketUsec;
 }
 
+//=========================================================================================
+
 //Return the frame air time in milliseconds
 uint16_t calcAirTimeMsec(uint8_t bytesToSend)
 {
   return ((uint16_t)ceil(calcAirTimeUsec(bytesToSend) / 1000.));
 }
+
+//=========================================================================================
 
 //Given spread factor and bandwidth, return symbol time
 float calcSymbolTimeUsec()
@@ -429,11 +445,15 @@ float calcSymbolTimeUsec()
   return (tSymUsec);
 }
 
+//=========================================================================================
+
 //Return symbol time in milliseconds
 float calcSymbolTimeMsec()
 {
   return calcSymbolTimeUsec() / 1000.;
 }
+
+//=========================================================================================
 
 //Given spread factor, bandwidth, coding rate and frame size, return most bytes we can push per second
 uint16_t calcMaxThroughput()
@@ -444,8 +464,12 @@ uint16_t calcMaxThroughput()
   return (mostBytesPerSecond);
 }
 
+//=========================================================================================
+
 uint16_t myRandSeed;
 bool myRandBit;
+
+//=========================================================================================
 
 //Generate unique hop table based on radio settings
 void generateHopTable()
@@ -547,6 +571,8 @@ void generateHopTable()
   }
 }
 
+//=========================================================================================
+
 //Array shuffle from http://benpfaff.org/writings/clc/shuffle.html
 void shuffle(float *array, uint8_t n)
 {
@@ -559,6 +585,8 @@ void shuffle(float *array, uint8_t n)
   }
 }
 
+//=========================================================================================
+
 //Simple lfsr randomizer. Needed because we cannot guarantee how random()
 //will respond on different Arduino platforms. ie Uno acts diffrently from ESP32.
 //We don't need 'truly random', we need repeatable across platforms.
@@ -568,6 +596,8 @@ uint16_t myRand()
   return myRandSeed = (myRandSeed >> 1) | (myRandBit << 15);
 }
 
+//=========================================================================================
+
 //Move to the next channel
 //This is called when the FHSS interrupt is received
 //at the beginning and during of a transmission or reception
@@ -576,11 +606,15 @@ void hopChannel()
   hopChannel(true, 1); //Move forward
 }
 
+//=========================================================================================
+
 //Hop to the previous channel in the frequency list
 void hopChannelReverse()
 {
   hopChannel(false, 1); //Move backward
 }
+
+//=========================================================================================
 
 //Set the next radio frequency given the hop direction and frequency table
 void hopChannel(bool moveForwardThroughTable, uint8_t channelCount)
@@ -600,6 +634,8 @@ void hopChannel(bool moveForwardThroughTable, uint8_t channelCount)
   blinkChannelHopLed(true);
 }
 
+//=========================================================================================
+
 //Determine the time in milliseconds when channel zero is reached again
 unsigned long mSecToChannelZero()
 {
@@ -615,6 +651,8 @@ unsigned long mSecToChannelZero()
     nextChannelZeroTimeInMillis += remainingChannels * settings.maxDwellTime;
   return nextChannelZeroTimeInMillis;
 }
+
+//=========================================================================================
 
 //Returns true if the radio indicates we have an ongoing reception
 bool receiveInProcess()
@@ -646,6 +684,8 @@ bool receiveInProcess()
   return (false);
 }
 
+//=========================================================================================
+
 //Convert the user's requested dBm to what the radio should be set to, to hit that power level
 //3 is lowest allowed setting using SX1276+RadioLib
 uint8_t covertdBmToSetting(uint8_t userSetting)
@@ -673,14 +713,19 @@ uint8_t covertdBmToSetting(uint8_t userSetting)
   }
 }
 
+//=========================================================================================
 #ifdef  RADIOLIB_LOW_LEVEL
+//=========================================================================================
+
 //Read a register from the SX1276 chip
 uint8_t readSX1276Register(uint8_t reg)
 {
   radioCallHistory[RADIO_CALL_readSX1276Register] = millis();
 
-  return radio._mod->SPIreadRegister(reg);
+  return radio._mod->SPIreadRegister(reg); // ENGR:CT not compatible with new lib
 }
+
+//=========================================================================================
 
 //SX1276 LoRa Register Names
 const char * const sx1276RegisterNames[] =
@@ -748,7 +793,9 @@ void printSX1276Registers()
   }
 }
 
+//=========================================================================================
 #endif  //RADIOLIB_LOW_LEVEL
+//=========================================================================================
 
 //ISR when DIO0 goes low
 //Called when transmission is complete or when RX is received
@@ -769,6 +816,8 @@ void transactionCompleteISR(void)
   transactionComplete = true;
 }
 
+//=========================================================================================
+
 //ISR when DIO1 goes low
 //Called when FhssChangeChannel interrupt occurs (at regular HoppingPeriods)
 //We do not use SX based channel hopping, and instead use a synchronized hardware timer
@@ -779,6 +828,8 @@ void hopISR(void)
 
   hop = true;
 }
+
+//=========================================================================================
 
 //We clear the hop ISR just to make logic analyzer data cleaner
 void updateHopISR()
@@ -918,6 +969,8 @@ bool xmitDatagramP2PFindPartner()
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Second packet in the three way handshake to bring up the link
 //SYNC_CLOCKS packet sent by server in response the FIND_PARTNER, includes the
 //channel number.  During discovery scanning, it's possible for the client to
@@ -937,6 +990,9 @@ bool xmitDatagramP2PSyncClocks()
   memcpy(endOfTxData, &currentMillis, sizeof(currentMillis));
   endOfTxData += sizeof(unsigned long);
 
+  if (settings.debugSync == true) // ENGR:CT
+    systemPrintln("xmitDatagramP2PSyncClocks()");
+    
   /*
                                                         endOfTxData ---.
                                                                        |
@@ -955,6 +1011,8 @@ bool xmitDatagramP2PSyncClocks()
   txControl.datagramType = DATAGRAM_SYNC_CLOCKS;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Last packet in the three way handshake to bring up the link
 bool xmitDatagramP2PZeroAcks()
@@ -1011,6 +1069,8 @@ bool xmitDatagramP2PCommand()
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Send a command response datagram to the remote system
 bool xmitDatagramP2PCommandResponse()
 {
@@ -1031,6 +1091,8 @@ bool xmitDatagramP2PCommandResponse()
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Send a data datagram to the remote system
 bool xmitDatagramP2PData()
 {
@@ -1050,6 +1112,8 @@ bool xmitDatagramP2PData()
   txControl.datagramType = DATAGRAM_DATA;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Heartbeat packet to keep the link up
 bool xmitDatagramP2PHeartbeat()
@@ -1081,6 +1145,8 @@ bool xmitDatagramP2PHeartbeat()
   txControl.datagramType = DATAGRAM_HEARTBEAT;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Create short packet - do not expect ack
 bool xmitDatagramP2PAck()
@@ -1136,6 +1202,8 @@ bool xmitDatagramMpData()
   txControl.datagramType = DATAGRAM_DATA;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Heartbeat packet sent by server in Multipoint mode, includes the
 //channel number. During discovery scanning, it's possible for the client to
@@ -1199,6 +1267,8 @@ bool xmitDatagramTrainingFindPartner()
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Build the client ACK packet used for training
 bool xmitDatagramTrainingAck(uint8_t * serverID)
 {
@@ -1226,6 +1296,8 @@ bool xmitDatagramTrainingAck(uint8_t * serverID)
   txControl.datagramType = DATAGRAM_TRAINING_ACK;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Copy the training parameters received from the server into the settings structure
 //that will eventually be written into the NVM
@@ -1389,11 +1461,15 @@ bool xmitVcDatagram()
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Broadcast a HEARTBEAT to all of the VCs
 bool xmitVcHeartbeat()
 {
   return xmitVcHeartbeat(VC_IGNORE_TX, myUniqueId);
 }
+
+//=========================================================================================
 
 bool xmitVcHeartbeat(int8_t addr, uint8_t * id)
 {
@@ -1445,6 +1521,8 @@ bool xmitVcHeartbeat(int8_t addr, uint8_t * id)
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Build the ACK frame
 bool xmitVcAckFrame(int8_t destVc)
 {
@@ -1474,6 +1552,8 @@ bool xmitVcAckFrame(int8_t destVc)
   return (transmitDatagram());
 }
 
+//=========================================================================================
+
 //Build and transmit the UNKNOWN_ACKS frame, first frame in 3-way ACKs handshake
 bool xmitVcUnknownAcks(int8_t destVc)
 {
@@ -1501,6 +1581,8 @@ bool xmitVcUnknownAcks(int8_t destVc)
   txControl.datagramType = DATAGRAM_VC_UNKNOWN_ACKS;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Build and transmit the SYNC_ACKS frame, second frame in 3-way ACKs handshake
 bool xmitVcSyncAcks(int8_t destVc)
@@ -1536,6 +1618,8 @@ bool xmitVcSyncAcks(int8_t destVc)
   txControl.datagramType = DATAGRAM_VC_SYNC_ACKS;
   return (transmitDatagram());
 }
+
+//=========================================================================================
 
 //Build and transmit the ZERO_ACKS frame, last frame in 3-way ACKs handshake
 bool xmitVcZeroAcks(int8_t destVc)
@@ -1806,9 +1890,12 @@ PacketType rcvDatagram()
     systemPrint(rxDataBytes, HEX);
     systemPrintln(") bytes");
     outputSerialData(true);
+    
     if (timeToHop == true) //If the channelTimer has expired, move to next frequency
       hopChannel();
+      
     petWDT();
+    
     if (settings.printRfData && rxDataBytes)
       dumpBuffer(incomingBuffer, rxDataBytes);
     outputSerialData(true);
@@ -1827,9 +1914,12 @@ PacketType rcvDatagram()
       systemPrint(rxDataBytes, HEX);
       systemPrintln(") bytes");
       outputSerialData(true);
+      
       if (timeToHop == true) //If the channelTimer has expired, move to next frequency
         hopChannel();
+        
       petWDT();
+      
       if (settings.printRfData && rxDataBytes)
         dumpBuffer(incomingBuffer, rxDataBytes);
       outputSerialData(true);
@@ -1882,10 +1972,11 @@ PacketType rcvDatagram()
       netIdMismatch++;
       return (DATAGRAM_NETID_MISMATCH);
     }
-  }
+  } // MODE_POINT_TO_POINT
 
   //Process the trailer
   petWDT();
+  
   if (settings.enableCRC16)
   {
     uint16_t crc;
@@ -1893,14 +1984,18 @@ PacketType rcvDatagram()
 
     //Compute the CRC-16 value
     crc = 0xffff;
+    
     if (timeToHop == true) //If the channelTimer has expired, move to next frequency
       hopChannel();
+      
     for (data = incomingBuffer; data < &incomingBuffer[rxDataBytes - 2]; data++)
       crc = crc16Table[*data ^ (uint8_t)(crc >> (16 - 8))] ^ (crc << 8);
+      
     if (timeToHop == true) //If the channelTimer has expired, move to next frequency
       hopChannel();
-    if ((incomingBuffer[rxDataBytes - 2] != (crc >> 8))
-        && (incomingBuffer[rxDataBytes - 1] != (crc & 0xff)))
+      
+    if ((incomingBuffer[rxDataBytes - 2] != (crc >> 8)) // ENGR:CT
+        || (incomingBuffer[rxDataBytes - 1] != (crc & 0xff)))
     {
       //Display the packet contents
       if (settings.printPktData || settings.debugReceive || settings.debugDatagrams)
@@ -1912,17 +2007,21 @@ PacketType rcvDatagram()
         systemPrint(" expected 0x");
         systemPrintln(crc, HEX);
         outputSerialData(true);
+        
         if (timeToHop == true) //If the channelTimer has expired, move to next frequency
           hopChannel();
+          
         petWDT();
+        
         if (settings.printRfData && rxDataBytes)
           dumpBuffer(incomingBuffer, rxDataBytes);
+          
         outputSerialData(true);
       }
       badCrc++;
       return (DATAGRAM_CRC_ERROR);
     }
-  }
+  } // enableCRC16
 
   /*
       |<--------------------------- rxDataBytes ---------------------------->|
@@ -1942,6 +2041,13 @@ PacketType rcvDatagram()
   datagramType = rxControl.datagramType;
   ackNumber = rxControl.ackNumber;
 
+//--------------------------------------
+
+//  if (datagramType == DATAGRAM_SYNC_CLOCKS) // ENGR:CT
+//    ctSyncRxCount++;
+
+//--------------------------------------
+
   if (settings.debugReceive)
     printControl(*((uint8_t *)&rxControl));
 
@@ -1956,7 +2062,7 @@ PacketType rcvDatagram()
     }
     badFrames++;
     return (DATAGRAM_BAD);
-  }
+  } // datagramType
 
   //Ignore this frame is requested
   if (rxControl.ignoreFrame)
@@ -1970,7 +2076,7 @@ PacketType rcvDatagram()
     }
     badFrames++;
     return (DATAGRAM_BAD);
-  }
+  } // ignoreFrame
 
   //Display the CRC
   if (settings.enableCRC16 && settings.debugReceive)
@@ -1980,6 +2086,7 @@ PacketType rcvDatagram()
     systemPrint(incomingBuffer[rxDataBytes - 2], HEX);
     systemPrintln(incomingBuffer[rxDataBytes - 1], HEX);
     outputSerialData(true);
+    
     if (timeToHop == true) //If the channelTimer has expired, move to next frequency
       hopChannel();
   }
@@ -2008,6 +2115,7 @@ PacketType rcvDatagram()
       systemPrint("    Channel Timer(ms): ");
       systemPrintln(msToNextHopRemote);
       outputSerialData(true);
+      
       if (timeToHop == true) //If the channelTimer has expired, move to next frequency
         hopChannel();
     }
@@ -2058,7 +2166,7 @@ PacketType rcvDatagram()
         hopChannel();
     }
   }
-  else
+  else //SF6
     rxDataBytes -= minDatagramSize;
 
   //Get the Virtual-Circuit header
@@ -2170,7 +2278,7 @@ PacketType rcvDatagram()
       }
       return DATAGRAM_NOT_MINE;
     }
-  }
+  } // MODE_VIRTUAL_CIRCUIT
 
   //Verify the packet number last so that the expected datagram or ACK number can be updated
   if (vc && (settings.operatingMode != MODE_MULTIPOINT))
@@ -2253,7 +2361,7 @@ PacketType rcvDatagram()
 
     //Account for this frame
     vc->framesReceived++;
-  }
+  } // !MODE_MULTIPOINT
 
   //If packet is good, check requestYield bit
   //If bit is set, this radio supresses transmissions for X number of frames
@@ -2288,9 +2396,12 @@ PacketType rcvDatagram()
     systemPrint(rxDataBytes, HEX);
     systemPrintln(") bytes");
     outputSerialData(true);
+    
     if (timeToHop == true) //If the channelTimer has expired, move to next frequency
       hopChannel();
+      
     petWDT();
+    
     if (settings.printPktData && rxDataBytes)
       dumpBuffer(rxData, rxDataBytes);
   }
@@ -2335,7 +2446,8 @@ PacketType rcvDatagram()
         break;
     }
     outputSerialData(true);
-  }
+  } // debugDatagrams
+  
   if (timeToHop == true) //If the channelTimer has expired, move to next frequency
     hopChannel();
 
@@ -2348,8 +2460,14 @@ PacketType rcvDatagram()
 
   //Blink the RX LED
   blinkRadioRxLed(true);
+
+  if (datagramType == DATAGRAM_SYNC_CLOCKS) // ENGR:CT
+    ctSyncRxCount++;
+  
   return datagramType;
 }
+
+//=========================================================================================
 
 //Determine what PacketType value should be returned to the receiving code, options are:
 // * Received datagramType
@@ -2479,6 +2597,9 @@ bool transmitDatagram()
   datagramsSent++;
   txDatagramSize = endOfTxData - outgoingPacket;
   length = txDatagramSize - headerBytes;
+
+  if (txControl.datagramType == DATAGRAM_SYNC_CLOCKS) // ENGR:CT
+    ctSyncTxCount++;
 
   //Select the ACK number
   if (txControl.datagramType == DATAGRAM_DATA_ACK)
@@ -2950,6 +3071,8 @@ bool transmitDatagram()
   return (retransmitDatagram(vc));
 }
 
+//=========================================================================================
+
 //Print the control byte value
 void printControl(uint8_t value)
 {
@@ -2998,6 +3121,8 @@ void printControl(uint8_t value)
 
   petWDT();
 }
+
+//=========================================================================================
 
 //The previous transmission was not received, retransmit the datagram
 //Returns false if we could not start tranmission due to packet received or RX in process
@@ -3216,6 +3341,8 @@ void startChannelTimer()
   startChannelTimer(settings.maxDwellTime);
 }
 
+//=========================================================================================
+
 //Use the specified value to start the timer that indicates when to hop channels
 void startChannelTimer(int16_t startAmount)
 {
@@ -3232,6 +3359,8 @@ void startChannelTimer(int16_t startAmount)
   triggerEvent(TRIGGER_HOP_TIMER_START);
 }
 
+//=========================================================================================
+
 //Stop the channel (hop) timer
 void stopChannelTimer()
 {
@@ -3245,6 +3374,8 @@ void stopChannelTimer()
   triggerEvent(TRIGGER_HOP_TIMER_STOP);
   timeToHop = false;
 }
+
+//=========================================================================================
 
 //Given the remote unit's number of ms before its next hop,
 //adjust our own channelTimer interrupt to be synchronized with the remote unit
@@ -3454,13 +3585,14 @@ void syncChannelTimer(uint32_t frameAirTimeUsec)
   reloadChannelTimer = true;
 
   //Log the previous clock sync
-  clockSyncData[clockSyncIndex].msToNextHop = msToNextHop;
-  clockSyncData[clockSyncIndex].frameAirTimeMsec = frameAirTimeMsec;
+  clockSyncData[clockSyncIndex].currentMillis     = currentMillis;
+  clockSyncData[clockSyncIndex].msToNextHop       = msToNextHop;
+  clockSyncData[clockSyncIndex].frameAirTimeMsec  = frameAirTimeMsec;
   clockSyncData[clockSyncIndex].msToNextHopRemote = msToNextHopRemote;
-  clockSyncData[clockSyncIndex].adjustment = adjustment;
-  clockSyncData[clockSyncIndex].delayedHopCount = delayedHopCount;
-  clockSyncData[clockSyncIndex].lclHopTimeMsec = lclHopTimeMsec;
-  clockSyncData[clockSyncIndex].timeToHop = timeToHop;
+  clockSyncData[clockSyncIndex].adjustment        = adjustment;
+  clockSyncData[clockSyncIndex].delayedHopCount   = delayedHopCount;
+  clockSyncData[clockSyncIndex].lclHopTimeMsec    = lclHopTimeMsec;
+  clockSyncData[clockSyncIndex].timeToHop         = timeToHop;
   clockSyncIndex += 1;
   if (clockSyncIndex >= (sizeof(clockSyncData) / sizeof(CLOCK_SYNC_DATA)) ) clockSyncIndex = 0;
 
@@ -3489,6 +3621,12 @@ void syncChannelTimer(uint32_t frameAirTimeUsec)
     systemPrint("Case #");
     systemPrint(caseNumber);
     systemPrint(", ");
+
+    systemPrint(ctSyncTxCount); // ENGR:CT
+    systemPrint(" TxSyn, ");
+    systemPrint(ctSyncRxCount); // ENGR:CT
+    systemPrint(" RxSyn, ");
+    
     systemPrint(delayedHopCount);
     systemPrint(" Hops, ");
     systemPrint(msToNextHopRemote);
@@ -3506,6 +3644,8 @@ void syncChannelTimer(uint32_t frameAirTimeUsec)
     systemPrintln(" mSec");
   }
 }
+
+//=========================================================================================
 
 //This function resets the heartbeat time and re-rolls the random time
 //Call when something has happened (ACK received, etc) where clocks have been sync'd
@@ -3525,6 +3665,8 @@ void setHeartbeatShort()
   heartbeatRandomTime = random(heartbeatRandomTime * 2 / 10, heartbeatRandomTime / 2); //20-50%
 }
 
+//=========================================================================================
+
 void setHeartbeatLong()
 {
   heartbeatTimer = millis();
@@ -3537,6 +3679,8 @@ void setHeartbeatLong()
 
   heartbeatRandomTime = random(heartbeatRandomTime * 8 / 10, heartbeatRandomTime); //80-100%
 }
+
+//=========================================================================================
 
 //Only the server sends heartbeats in multipoint mode
 //But the clients still need to update their timeout
@@ -3551,6 +3695,8 @@ void setHeartbeatMultipoint()
   //MP Linkup requires a HB on channel 0 so we leverage the VC technique
   setVcHeartbeatTimer();
 }
+
+//=========================================================================================
 
 //Determine the delay for the next VC HEARTBEAT
 void setVcHeartbeatTimer()
@@ -3607,6 +3753,8 @@ void setVcHeartbeatTimer()
   }
 }
 
+//=========================================================================================
+
 //Conversion table from radio status value into a status string
 const I16_TO_STRING radioStatusCodes[] =
 {
@@ -3637,6 +3785,8 @@ const I16_TO_STRING radioStatusCodes[] =
   {RADIOLIB_ERR_LORA_HEADER_DAMAGED, "RADIOLIB_ERR_LORA_HEADER_DAMAGED"},
 };
 
+//=========================================================================================
+
 //Return the status string matching the status value, return NULL if not found
 const char * getRadioStatusCode(int status)
 {
@@ -3647,6 +3797,8 @@ const char * getRadioStatusCode(int status)
   }
   return NULL;
 }
+
+//=========================================================================================
 
 //Conversion table from radio call value into a name string
 const I16_TO_STRING radioCallName[] =
@@ -3696,6 +3848,8 @@ const I16_TO_STRING radioCallName[] =
 #endif  //RADIOLIB_LOW_LEVEL
 };
 
+//=========================================================================================
+
 //Verify the RADIO_CALLS enum against the radioCallName
 const char * verifyRadioCallNames()
 {
@@ -3707,6 +3861,8 @@ const char * verifyRadioCallNames()
   return NULL;
 }
 
+//=========================================================================================
+
 //Convert a radio call value into a string, return NULL if not found
 const char * getRadioCall(uint8_t radioCall)
 {
@@ -3717,6 +3873,8 @@ const char * getRadioCall(uint8_t radioCall)
   }
   return NULL;
 }
+
+//=========================================================================================
 
 //Display the radio call history
 void displayRadioCallHistory()
@@ -3758,6 +3916,8 @@ void displayRadioCallHistory()
   petWDT();
 }
 
+//=========================================================================================
+
 //Read from radio to clear receiveInProcess bits
 void dummyRead()
 {
@@ -3776,3 +3936,5 @@ void dummyRead()
     }
   }
 }
+
+//=========================================================================================

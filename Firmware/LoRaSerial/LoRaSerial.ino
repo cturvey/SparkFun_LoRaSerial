@@ -40,9 +40,9 @@
 */
 
 const int FIRMWARE_VERSION_MAJOR = 2;
-const int FIRMWARE_VERSION_MINOR = 0;
+const int FIRMWARE_VERSION_MINOR = 6; // 0
 
-#define RADIOLIB_LOW_LEVEL  //Enable access to the module functions
+#define RADIOLIB_LOW_LEVEL true //Enable access to the module functions
 //#define ENABLE_DEVELOPER true //Uncomment this line to enable special developer modes
 
 #define UNUSED(x) (void)(x)
@@ -445,6 +445,11 @@ CLOCK_SYNC_DATA clockSyncData[16];
 
 bool requestYield = false; //Datagram sender can tell this radio to stop transmitting to enable two-way comm
 unsigned long yieldTimerStart = 0;
+
+// ENGR:CT
+
+uint32_t ctSyncTxCount = 0;
+uint32_t ctSyncRxCount = 0;
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

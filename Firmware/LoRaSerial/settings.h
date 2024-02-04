@@ -147,7 +147,7 @@ typedef enum
 
 const char * const radioDatagramType[] =
 { //    0            1        2
-  "FIND_PARTNER", "ACK-1", "ACK-2",
+  "FIND_PARTNER", "SYNC_CLOCKS", "ACK-2",
   // 3        4           5            6           7
   "DATA", "DATA-ACK", "HEARTBEAT", "RMT-CMD", "RMT_RESP",
   //  8
@@ -369,13 +369,15 @@ typedef enum
 
 typedef struct _CLOCK_SYNC_DATA
 {
-  int16_t msToNextHopRemote;
-  uint16_t frameAirTimeMsec;
-  uint16_t msToNextHop;
-  int16_t lclHopTimeMsec;
-  int16_t adjustment;
-  int8_t delayedHopCount;
-  bool timeToHop;
+  uint32_t  currentMillis; // ENGR:CT
+  
+  int16_t   msToNextHopRemote;
+  uint16_t  frameAirTimeMsec;
+  uint16_t  msToNextHop;
+  int16_t   lclHopTimeMsec;
+  int16_t   adjustment;
+  int8_t    delayedHopCount;
+  bool      timeToHop;
 } CLOCK_SYNC_DATA;
 
 //These are all the settings that can be set on Serial Terminal Radio. It's recorded to NVM.
