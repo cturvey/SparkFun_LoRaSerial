@@ -40,7 +40,7 @@
 */
 
 const int FIRMWARE_VERSION_MAJOR = 2;
-const int FIRMWARE_VERSION_MINOR = 6; // 0
+const int FIRMWARE_VERSION_MINOR = 0;
 
 #define RADIOLIB_LOW_LEVEL true //Enable access to the module functions
 //#define ENABLE_DEVELOPER true //Uncomment this line to enable special developer modes
@@ -615,6 +615,8 @@ void updateRTS(bool assertRTS);
 #include "Arch_SAMD.h"
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+//=========================================================================================
+
 //Initial entrypoint following any runtime library initialization
 void setup()
 {
@@ -660,6 +662,8 @@ void setup()
   blinkStartup(); //Blink LEDs to indicate the completion of system setup
 }
 
+//=========================================================================================
+
 //Idle loop for the CPU
 void loop()
 {
@@ -675,3 +679,5 @@ void loop()
 
   updateHopISR(); //Clear hop ISR as needed
 }
+
+//=========================================================================================

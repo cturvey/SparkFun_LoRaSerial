@@ -9,6 +9,8 @@ uint16_t availableRXBytes()
   return (sizeof(serialReceiveBuffer) - rxTail + rxHead);
 }
 
+//=========================================================================================
+
 //Returns true if CTS is asserted (high = host says it's ok to send data)
 bool isCTS()
 {
@@ -17,6 +19,8 @@ bool isCTS()
   //The SAMD21 specification (page 448) indicates that CTS is low when data is flowing
   return (digitalRead(pin_cts) == LOW) ^ settings.invertCts;
 }
+
+//=========================================================================================
 
 #define NEXT_RX_TAIL(n)   ((rxTail + n) % sizeof(serialReceiveBuffer))
 
@@ -30,6 +34,8 @@ uint16_t availableTXBytes()
   if (txHead >= txTail) return (txHead - txTail);
   return (sizeof(serialTransmitBuffer) - txTail + txHead);
 }
+
+//=========================================================================================
 
 //Add serial data to the output buffer
 void serialBufferOutput(uint8_t * data, uint16_t dataLength)
@@ -55,6 +61,8 @@ void serialBufferOutput(uint8_t * data, uint16_t dataLength)
   txHead %= sizeof(serialTransmitBuffer);
 }
 
+//=========================================================================================
+
 //Add a single byte to the output buffer
 void serialOutputByte(uint8_t data)
 {
@@ -75,6 +83,8 @@ void serialOutputByte(uint8_t data)
     commandTXHead %= sizeof(commandTXBuffer);
   }
 }
+
+//=========================================================================================
 
 //Update the output of the RTS pin
 //LoRaSerial will drive RTS low when it is ready for data
@@ -99,8 +109,12 @@ uint16_t availableRadioTXBytes()
   return (sizeof(radioTxBuffer) - radioTxTail + radioTxHead);
 }
 
+//=========================================================================================
+
 #define NEXT_RADIO_TX_HEAD(n)   ((radioTxHead + n) % sizeof(radioTxBuffer))
 #define NEXT_RADIO_TX_TAIL(n)   ((radioTxTail + n) % sizeof(radioTxBuffer))
+
+//=========================================================================================
 
 //If we have data to send, get the packet ready
 //Return true if new data is ready to be sent
@@ -128,6 +142,8 @@ bool processWaitingSerial(bool sendNow)
   }
   return (false);
 }
+
+//=========================================================================================
 
 //Send a portion of the radioTxBuffer to outgoingPacket
 void readyOutgoingPacket(uint16_t bytesToSend)
@@ -173,7 +189,11 @@ uint16_t availableTXCommandBytes()
   return (sizeof(commandTXBuffer) - commandTXTail + commandTXHead);
 }
 
+//=========================================================================================
+
 #define NEXT_COMMAND_TX_TAIL(n)     ((commandTXTail + n) % sizeof(commandTXBuffer))
+
+//=========================================================================================
 
 //Send a portion of the commandTXBuffer to serialTransmitBuffer
 void readyLocalCommandPacket()
@@ -213,6 +233,8 @@ void readyLocalCommandPacket()
     commandTXTail = NEXT_COMMAND_TX_TAIL(1);
   }
 }
+
+//=========================================================================================
 
 //Send a portion of the commandTXBuffer to outgoingPacket
 uint8_t readyOutgoingCommandPacket(uint16_t offset)
@@ -316,8 +338,7 @@ void updateSerial()
     blinkSerialRxLed(true); //Turn on LED during serial reception
 
     //Take a break if there are ISRs to attend to
-    petWDT();
-    if (timeToHop == true) hopChannel();
+    CheckChannelHopAndKickWatchdog();
 
     byte incoming = systemRead();
 
@@ -340,7 +361,7 @@ void updateSerial()
       systemPrint(sizeof(serialReceiveBuffer) - previousHead + rxHead);
     systemPrintln(" bytes into serialReceiveBuffer");
     outputSerialData(true);
-    petWDT();
+    CheckChannelHopAndKickWatchdog();
   }
 
   //Process the serial data
@@ -371,7 +392,7 @@ void updateSerial()
       systemPrint(commandLength);
       systemPrintln(" bytes from commandRXBuffer into commandBuffer");
       outputSerialData(true);
-      petWDT();
+      CheckChannelHopAndKickWatchdog();
     }
 
     if (commandBuffer[0] == 'R') //Error check
@@ -389,6 +410,8 @@ void updateSerial()
   }
 }
 
+//=========================================================================================
+
 //Process serial input for point-to-point and multi-point modes
 void processSerialInput()
 {
@@ -403,8 +426,7 @@ void processSerialInput()
          && (transactionComplete == false))
   {
     //Take a break if there are ISRs to attend to
-    petWDT();
-    if (timeToHop == true) hopChannel();
+    CheckChannelHopAndKickWatchdog();
 
     byte incoming = serialReceiveBuffer[rxTail++];
     rxTail %= sizeof(serialReceiveBuffer);
@@ -558,6 +580,8 @@ void processSerialInput()
   }
 }
 
+//=========================================================================================
+
 //Move the serial data from serialTransmitBuffer to the USB or serial port
 void outputSerialData(bool ignoreISR)
 {
@@ -570,8 +594,7 @@ void outputSerialData(bool ignoreISR)
     blinkSerialTxLed(true); //Turn on LED during serial transmissions
 
     //Take a break if there are ISRs to attend to
-    petWDT();
-    if (timeToHop == true) hopChannel();
+    CheckChannelHopAndKickWatchdog();
 
     arch.serialWrite(serialTransmitBuffer[txTail]);
     systemFlush(); //Prevent serial hardware from blocking more than this one write
@@ -593,6 +616,8 @@ bool vcSerialMsgGetLengthByte(uint8_t * msgLength)
   *msgLength = radioTxBuffer[radioTxTail];
   return true;
 }
+
+//=========================================================================================
 
 //Determine if received serial data may be sent to the remote system
 bool vcSerialMessageReceived()
@@ -736,6 +761,8 @@ bool vcSerialMessageReceived()
   return false;
 }
 
+//=========================================================================================
+
 //Notify the PC of the message delivery failure
 void vcSendPcAckNack(int8_t vcIndex, bool ackMsg)
 {
@@ -755,6 +782,8 @@ void vcSendPcAckNack(int8_t vcIndex, bool ackMsg)
   systemWrite((uint8_t *)&message, sizeof(message));
 }
 
+//=========================================================================================
+
 //Process serial input when running in MODE_VIRTUAL_CIRCUIT
 void vcProcessSerialInput()
 {
@@ -772,8 +801,7 @@ void vcProcessSerialInput()
          && (transactionComplete == false))
   {
     //Take a break if there are ISRs to attend to
-    petWDT();
-    if (timeToHop == true) hopChannel();
+    CheckChannelHopAndKickWatchdog();
 
     //Skip any garbage in the input stream
     data = serialReceiveBuffer[rxTail];
@@ -933,9 +961,10 @@ void vcProcessSerialInput()
   }
 
   //Take a break if there are ISRs to attend to
-  petWDT();
-  if (timeToHop == true) hopChannel();
+  CheckChannelHopAndKickWatchdog();
 }
+
+//=========================================================================================
 
 //Display any serial data for output, discard:
 // * Serial input data
@@ -981,3 +1010,5 @@ void resetSerial()
   commandTXHead = commandTXTail;
   commandLength = 0;
 }
+
+//=========================================================================================

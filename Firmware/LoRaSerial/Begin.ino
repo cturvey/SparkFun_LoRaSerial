@@ -1,3 +1,7 @@
+//=========================================================================================
+//  Begin.ino
+//=========================================================================================
+
 //Blink LEDs to indicate the completion of system setup
 void blinkStartup()
 {
@@ -21,6 +25,8 @@ void blinkStartup()
   }
 }
 
+//=========================================================================================
+
 //Initialize the radio layer
 void beginLoRa()
 {
@@ -40,6 +46,8 @@ void beginLoRa()
   changeState(RADIO_RESET);
 }
 
+//=========================================================================================
+
 //Initialize the button driver
 void beginButton()
 {
@@ -49,6 +57,8 @@ void beginButton()
     trainBtn->begin();
   }
 }
+
+//=========================================================================================
 
 //Delay with pets of WDT when needed
 void delayWDT(uint16_t delayAmount)
@@ -61,6 +71,8 @@ void delayWDT(uint16_t delayAmount)
   }
 }
 
+//=========================================================================================
+
 //Initialize the serial drivers
 void beginSerial(uint16_t serialSpeed)
 {
@@ -68,16 +80,33 @@ void beginSerial(uint16_t serialSpeed)
   arch.beginSerial(serialSpeed);
 }
 
+//=========================================================================================
+
 //Ensure the watch dog timer does not fire which would cause a CPU hardware reset
-void petWDT()
+void petWDT(void)
 {
-  //Petting the dog takes a long time (~4.5ms on SAMD21) so it's only done after we've passed the timeout
-  if (millis() - lastPet > petTimeout)
-  {
-    lastPet = millis();
-    arch.petWDT();
-  }
+   arch.petWDT();
 }
+
+//=========================================================================================
+
+void CheckChannelHopAndKickWatchdog(void)
+{
+  if (timeToHop == true) //If the channelTimer has expired, move to next frequency
+    hopChannel();
+      
+  petWDT(); 
+}
+
+//=========================================================================================
+
+void CheckChannelHop(void)
+{
+  if (timeToHop == true) //If the channelTimer has expired, move to next frequency
+    hopChannel();
+}
+
+//=========================================================================================
 
 //Start the timer measuring the dwell interval and indicating that it is time to
 //hop channels
@@ -88,6 +117,8 @@ void beginChannelTimer()
 
   stopChannelTimer(); //Start timer in state machine - beginChannelTimer
 }
+
+//=========================================================================================
 
 //ISR that fires when channel timer expires
 void channelTimerHandler()
@@ -110,3 +141,5 @@ void channelTimerHandler()
     timeToHop = true;
   }
 }
+
+//=========================================================================================

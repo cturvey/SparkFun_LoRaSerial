@@ -1060,7 +1060,7 @@ void updateRadioState()
     case RADIO_DISCOVER_BEGIN:
       rssi = -200; //Force RSSI LEDs off until link is up
 
-      if (settings.server)
+      if (settings.server) // MULTIPOINT SERVER, bail to stay on task
       {
         changeState(RADIO_MP_STANDBY);
         break;
@@ -1099,7 +1099,7 @@ void updateRadioState()
     case RADIO_DISCOVER_SCANNING:
       rssi = -200; //Force RSSI LEDs off until link is up
 
-      if (settings.server)
+      if (settings.server) // MULTIPOINT SERVER, bail to stay on task
       {
         changeState(RADIO_MP_STANDBY);
         break;
@@ -1154,7 +1154,8 @@ void updateRadioState()
             {
               systemPrintln("MP: SYNC_CLOCKS RX");
             }
-            if (!settings.server) // MULTIPOINT SERVER
+            
+            if (!settings.server) // MULTIPOINT STATION, NOT SERVER
             {
               //Change to the server's channel number
               channelNumber = rxData[0];
@@ -1173,7 +1174,8 @@ void updateRadioState()
               if (settings.debugSync)
               {
                 systemPrint("    Channel Number: ");
-                systemPrintln(channelNumber);
+                systemPrint(channelNumber, 2);
+                systemPrintln();
                 outputSerialData(true);
                 
                 if (timeToHop == true) //If the channelTimer has expired, move to next frequency
@@ -1318,8 +1320,10 @@ void updateRadioState()
               if (settings.debugSync)
               {
                 systemPrint("    Channel Number: ");
-                systemPrintln(channelNumber);
+                systemPrint(channelNumber, 2);
+                systemPrintln();
                 outputSerialData(true);
+                
                 if (timeToHop == true) //If the channelTimer has expired, move to next frequency
                   hopChannel();
               }
@@ -1411,7 +1415,7 @@ void updateRadioState()
             triggerEvent(TRIGGER_RX_FIND_PARTNER);
 
             //A new radio is saying hello
-            if (settings.server == true)
+            if (settings.server == true) // MULTIPOINT SERVER, Respond to Find Partner with Channel Sync Details
             {
               //Ack their FIND_PARTNER with SYNC_CLOCK
               if (xmitDatagramP2PSyncClocks() == true)
@@ -2893,26 +2897,26 @@ void dumpClockSynchronization()
       uint8_t index = (x + clockSyncIndex) % (sizeof(clockSyncData) / sizeof(clockSyncData[0]));
       if (clockSyncData[index].frameAirTimeMsec)
       {
-        systemPrint(clockSyncData[index].currentMillis);
+        systemPrint(clockSyncData[index].currentMillis, 9);
         systemPrint(" Lcl: ");
-        systemPrint(clockSyncData[index].lclHopTimeMsec);
+        systemPrint(clockSyncData[index].lclHopTimeMsec, 3);
         systemPrint(", Rmt: ");
-        systemPrint(clockSyncData[index].msToNextHopRemote);
+        systemPrint(clockSyncData[index].msToNextHopRemote, 3);
         systemPrint(" - ");
-        systemPrint(clockSyncData[index].frameAirTimeMsec);
+        systemPrint(clockSyncData[index].frameAirTimeMsec, 3);
         systemPrint(" = ");
-        systemPrint(clockSyncData[index].msToNextHopRemote - clockSyncData[index].frameAirTimeMsec);
+        systemPrint(clockSyncData[index].msToNextHopRemote - clockSyncData[index].frameAirTimeMsec, 3);
         systemPrint(" + ");
-        systemPrint(clockSyncData[index].adjustment);
+        systemPrint(clockSyncData[index].adjustment, 3);
         systemPrint(" = ");
-        systemPrint(clockSyncData[index].msToNextHop);
+        systemPrint(clockSyncData[index].msToNextHop, 3);
         systemPrint(" msToNextHop");
         if (clockSyncData[index].delayedHopCount)
         {
           systemPrint(", timeToHop: ");
-          systemPrint(clockSyncData[index].timeToHop);
+          systemPrint(clockSyncData[index].timeToHop, 3);
           systemPrint(", Hops: ");
-          systemPrint(clockSyncData[index].delayedHopCount);
+          systemPrint(clockSyncData[index].delayedHopCount, 2);
         }
         systemPrintln();
         outputSerialData(true);

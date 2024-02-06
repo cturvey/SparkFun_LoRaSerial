@@ -155,7 +155,8 @@ bool commandAT(const char * commandString)
         systemPrint(" v");
         systemPrint(FIRMWARE_VERSION_MAJOR);
         systemPrint(".");
-        systemPrintln(FIRMWARE_VERSION_MINOR);
+        systemPrint(FIRMWARE_VERSION_MINOR);
+        systemPrintln(" tinker");
         return true;
 
       case ('O'): //ATO - Exit command mode
