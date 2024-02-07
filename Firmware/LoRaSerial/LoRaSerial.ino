@@ -42,6 +42,8 @@
 const int FIRMWARE_VERSION_MAJOR = 2;
 const int FIRMWARE_VERSION_MINOR = 0;
 
+#define TINKER_BUILD
+
 #define RADIOLIB_LOW_LEVEL true //Enable access to the module functions
 //#define ENABLE_DEVELOPER true //Uncomment this line to enable special developer modes
 

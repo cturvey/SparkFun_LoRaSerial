@@ -2424,7 +2424,7 @@ PacketType rcvDatagram()
     if (settings.frequencyHop == true)
     {
       systemPrint(" ");// ENGR:CT
-      systemPrint(channelNumber, 2);
+      systemPrintDec(channelNumber, 2);
     }
     
     systemPrintln();

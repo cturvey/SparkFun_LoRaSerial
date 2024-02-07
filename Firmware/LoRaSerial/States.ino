@@ -182,20 +182,27 @@ void updateRadioState()
       //Start receiving
       returnToReceiving();
 
-      if (settings.server == true)
+      if (settings.server == true) // SERVER
       {
         clockSyncReceiver = false; //Multipoint server is clock source
         startChannelTimer(); //Start hopping - multipoint clock source
+
+//Should be receiving? just keep transmitting
 
         //Start receiving
         returnToReceiving();
         changeState(RADIO_MP_STANDBY);
       }
       else
+      {
         //Start receiving
         returnToReceiving();
-        
-      changeState(RADIO_DISCOVER_BEGIN);
+#ifdef TINKER_BUILD
+        changeState(RADIO_DISCOVER_STANDBY);//Wait for Heartbeat
+#else        
+        changeState(RADIO_DISCOVER_BEGIN); //Scaning Backward
+#endif // TINKER_BUILD
+      }
       break;
 
     //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -638,8 +645,7 @@ void updateRadioState()
     //Wait for the data transmission to complete
     //====================
     case RADIO_P2P_LINK_UP_WAIT_TX_DONE:
-      if (timeToHop == true) //If the channelTimer has expired, move to next frequency
-        hopChannel();
+      CheckChannelHop();
 
       if (transactionComplete)
       {
@@ -672,8 +678,7 @@ void updateRadioState()
     // * Link timeout
     //====================
     case RADIO_P2P_LINK_UP:
-      if (timeToHop == true) //If the channelTimer has expired, move to next frequency
-        hopChannel();
+      CheckChannelHop();
 
       //Check for a received datagram
       if (transactionComplete == true)
@@ -1174,12 +1179,11 @@ void updateRadioState()
               if (settings.debugSync)
               {
                 systemPrint("    Channel Number: ");
-                systemPrint(channelNumber, 2);
+                systemPrintDec(channelNumber, 2);
                 systemPrintln();
                 outputSerialData(true);
-                
-                if (timeToHop == true) //If the channelTimer has expired, move to next frequency
-                  hopChannel();
+
+                CheckChannelHop();
               }
 
               frequencyCorrection += radio.getFrequencyError() / 1000000.0;
@@ -1320,12 +1324,11 @@ void updateRadioState()
               if (settings.debugSync)
               {
                 systemPrint("    Channel Number: ");
-                systemPrint(channelNumber, 2);
+                systemPrintDec(channelNumber, 2);
                 systemPrintln();
                 outputSerialData(true);
                 
-                if (timeToHop == true) //If the channelTimer has expired, move to next frequency
-                  hopChannel();
+                CheckChannelHop();
               }
 
               frequencyCorrection += radio.getFrequencyError() / 1000000.0;
@@ -1341,7 +1344,7 @@ void updateRadioState()
                 systemPrintln("Received HB, leaving DISCOVER standby");
 
               changeState(RADIO_MP_STANDBY);
-            }
+            } // !server
 
             break;
 
@@ -1362,8 +1365,7 @@ void updateRadioState()
     //====================
     case RADIO_MP_STANDBY:
       //Hop channels when required
-      if (timeToHop == true)
-        hopChannel();
+      CheckChannelHop();
 
       //Process the receive packet
       if (transactionComplete == true)
@@ -1493,7 +1495,7 @@ void updateRadioState()
         }
 
         //If the client hasn't received a packet in too long, return to scanning
-        else if (settings.server == false)
+        else if (settings.server == false) // !SERVER
         {
           if ((millis() - lastPacketReceived) > (settings.heartbeatTimeout * 3))
           {
@@ -1503,7 +1505,14 @@ void updateRadioState()
               outputSerialData(true);
               dumpClockSynchronization();
             }
-            changeState(RADIO_DISCOVER_BEGIN);
+#ifdef TINKER_BUILD
+            //Return to channel 0, and wait in Standby for Server to Xmit HB
+            channelNumber = 0;
+            setRadioFrequency(false);
+            changeState(RADIO_DISCOVER_STANDBY);//Wait for Heartbeat
+#else
+            changeState(RADIO_DISCOVER_BEGIN);//Scanning Backward
+#endif// TINKER_BUILD
           }
         }
       }
@@ -1514,9 +1523,8 @@ void updateRadioState()
     //====================
     case RADIO_MP_WAIT_TX_DONE:
       //Hop channels when required
-      if (timeToHop == true)
-        hopChannel();
-
+      CheckChannelHop();
+      
       //If transmit is complete then start receiving
       if (transactionComplete == true)
       {
@@ -1940,8 +1948,7 @@ void updateRadioState()
     //====================
     case RADIO_VC_WAIT_TX_DONE:
       //Hop channels when required
-      if (timeToHop == true)
-        hopChannel();
+      CheckChannelHop();
 
       //If dio0ISR has fired, we are done transmitting
       if (transactionComplete == true)
@@ -1973,8 +1980,7 @@ void updateRadioState()
     //====================
     case RADIO_VC_WAIT_RECEIVE:
       //Hop channels when required
-      if (timeToHop == true)
-        hopChannel();
+      CheckChannelHop();
 
       //If dio0ISR has fired, a packet has arrived
       currentMillis = millis();
@@ -2443,7 +2449,7 @@ void updateRadioState()
                 memcpy(commandBuffer, &outgoingPacket[headerBytes + VC_RADIO_HEADER_BYTES], commandLength);
                 if (settings.debugSerial)
                 {
-                  systemPrint("RX: Moving ");
+                  systemPrint("sMoving ");
                   systemPrint(commandLength);
                   systemPrintln(" bytes into commandBuffer");
                   outputSerialData(true);
@@ -2897,26 +2903,26 @@ void dumpClockSynchronization()
       uint8_t index = (x + clockSyncIndex) % (sizeof(clockSyncData) / sizeof(clockSyncData[0]));
       if (clockSyncData[index].frameAirTimeMsec)
       {
-        systemPrint(clockSyncData[index].currentMillis, 9);
+        systemPrintDec(clockSyncData[index].currentMillis, 9);
         systemPrint(" Lcl: ");
-        systemPrint(clockSyncData[index].lclHopTimeMsec, 3);
+        systemPrintDec(clockSyncData[index].lclHopTimeMsec, 3);
         systemPrint(", Rmt: ");
-        systemPrint(clockSyncData[index].msToNextHopRemote, 3);
+        systemPrintDec(clockSyncData[index].msToNextHopRemote, 3);
         systemPrint(" - ");
-        systemPrint(clockSyncData[index].frameAirTimeMsec, 3);
+        systemPrintDec(clockSyncData[index].frameAirTimeMsec, 3);
         systemPrint(" = ");
-        systemPrint(clockSyncData[index].msToNextHopRemote - clockSyncData[index].frameAirTimeMsec, 3);
+        systemPrintDec(clockSyncData[index].msToNextHopRemote - clockSyncData[index].frameAirTimeMsec, 3);
         systemPrint(" + ");
-        systemPrint(clockSyncData[index].adjustment, 3);
+        systemPrintDec(clockSyncData[index].adjustment, 3);
         systemPrint(" = ");
-        systemPrint(clockSyncData[index].msToNextHop, 3);
+        systemPrintDec(clockSyncData[index].msToNextHop, 3);
         systemPrint(" msToNextHop");
         if (clockSyncData[index].delayedHopCount)
         {
           systemPrint(", timeToHop: ");
-          systemPrint(clockSyncData[index].timeToHop, 3);
+          systemPrintDec(clockSyncData[index].timeToHop, 3);
           systemPrint(", Hops: ");
-          systemPrint(clockSyncData[index].delayedHopCount, 2);
+          systemPrintDec(clockSyncData[index].delayedHopCount, 2);
         }
         systemPrintln();
         outputSerialData(true);

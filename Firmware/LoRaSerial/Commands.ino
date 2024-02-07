@@ -156,7 +156,11 @@ bool commandAT(const char * commandString)
         systemPrint(FIRMWARE_VERSION_MAJOR);
         systemPrint(".");
         systemPrint(FIRMWARE_VERSION_MINOR);
+#ifdef TINKER_BUILD
         systemPrintln(" tinker");
+#else
+        systemPrintln();
+#endif
         return true;
 
       case ('O'): //ATO - Exit command mode
